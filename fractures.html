@@ -213,14 +213,14 @@
               var cubeMaterial = new THREE.MeshPhongMaterial({
                 color : 0xff0000
               });
-              var hue = (Math.log(1 / obj.scale.x) / Math.LN2 / 6);
+              var hue = Math.random(); //(Math.log(1 / obj.scale.x) / Math.LN2 / 6);
 
               cubeMaterial.color.setHSL(hue, 1, 0.5);
 
               var cubeMesh = new THREE.Mesh(obj.geometry, cubeMaterial);
               cubeMesh.castShadow = true;
               cubeMesh.scale.copy(new THREE.Vector3(obj.scale.x * .5, obj.scale.y * .5, obj.scale.z * .5));
-              cubeMesh.rotation.copy(obj.rotation);
+              //cubeMesh.rotation.copy(obj.rotation);
 
               meshes.push(cubeMesh);
 
@@ -228,6 +228,9 @@
               var boxBody = new CANNON.Body({
                 mass : mass
               });
+              
+              //boxBody.quaternion.setFromEuler(obj.rotation);
+              boxBody.quaternion.setFromAxisAngle(new CANNON.Vec3(obj.rotation.x,obj.rotation.y,obj.rotation.z), 1);
 
               boxBody.addShape(boxShape);
               boxBody.position.copy(obj.position);
