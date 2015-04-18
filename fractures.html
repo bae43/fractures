@@ -204,15 +204,18 @@
           }
         }
 
-        var cubeMaterial = new THREE.MeshPhongMaterial({
-          color : 0xff0000
-        });
-
         var mass = 5;
 
         for (var i = 0; i < 2; i++) {
           for (var j = 0; j < 2; j++) {
             for (var k = 0; k < 2; k++) {
+
+              var cubeMaterial = new THREE.MeshPhongMaterial({
+                color : 0xff0000
+              });
+              var hue = (Math.log(1 / obj.scale.x) / Math.LN2 / 6);
+
+              cubeMaterial.color.setHSL(hue, 1, 0.5);
 
               var cubeMesh = new THREE.Mesh(obj.geometry, cubeMaterial);
               cubeMesh.castShadow = true;
