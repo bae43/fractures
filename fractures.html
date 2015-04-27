@@ -86,11 +86,16 @@
 		<script src="js/libs/cannon.js"></script>
 
 		<script>
-      $('#fracture-list>li').click(function(e) {
+      $('#scene-list li').click(function(e) {
         e.stopPropagation();
-        console.log(e);
-        setScene("cubes");
+        setScene($.trim(e.target.textContent));
       });
+
+      $('#fracture-list li').click(function(e) {
+        e.stopPropagation();
+        setFracturePattern($.trim(e.target.textContent));
+      });
+
       var world;
       var dt = 1 / 60;
 
@@ -103,7 +108,7 @@
 
       var n_cubes = 3;
 
-      var container, camera, scene, renderer, projector;
+      var container, camera, scene, renderer, projector, loader;
 
       // To be synced
       var meshes = [], bodies = [];
@@ -122,6 +127,8 @@
         projector = new THREE.Projector();
 
         container = document.getElementById('container');
+
+        loader = new THREE.JSONLoader();
 
         // scene
         scene = new THREE.Scene();
@@ -170,7 +177,8 @@
           color : 0x777777
         });
         markerMaterial = new THREE.MeshLambertMaterial({
-          color : 0xff0000
+          color : 0xff0000,
+          side : THREE.DoubleSide,
         });
         //THREE.ColorUtils.adjustHSV( material.color, 0, 0, 0.9 );
         mesh = new THREE.Mesh(geometry, material);
@@ -181,7 +189,8 @@
         mesh.name = "ground plane";
         scene.add(mesh);
 
-        setScene("cubes");
+        setScene("Cubes");
+        setFracturePattern('Sphere');
 
         renderer = new THREE.WebGLRenderer({
           antialias : true
@@ -204,15 +213,17 @@
 
       function setScene(scene_name) {
         for (var m in meshes) {
-          scene.remove(m.name);
+          scene.remove(meshes[m]);
+        }
+        meshes = [];
 
-        }
         for (var b in bodies) {
-          world.remove(b);
+          world.remove(bodies[b]);
         }
+        bodies = [];
 
         switch(scene_name) {
-          case "cubes":
+          case "Cubes":
             // cubes
             var cubeGeo;
             var cubeMaterial = new THREE.MeshPhongMaterial({
@@ -234,7 +245,6 @@
                 mass : mass
               });
               boxBody.addShape(boxShape);
-              boxBody.position.set(0, 5, 0);
               boxBody.position.y = i * 2 + 2;
 
               boxBody.name = "Box Body " + i;
@@ -243,17 +253,91 @@
             }
 
             break;
+          case "Pillars":
+            loader.load("rsc/fracture_templates/pillar-simple.js", function(geometry) {
+
+              var material = new THREE.MeshPhongMaterial({
+                color : 0x3333ff
+              });
+              var mass = 5, radius = 1.3;
+              boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+
+              for (var i = 0; i < n_cubes; i++) {
+
+                var mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                meshes.push(mesh);
+                mesh.name = "pillar  " + i;
+                scene.add(mesh);
+
+                // boxes
+                var body = new CANNON.Body({
+                  mass : mass
+                });
+
+                var verts = [], faces = [];
+
+                // Get vertices
+                for (var j = 0; j < geometry.vertices.length; j++) {
+                  verts.push(new CANNON.Vec3(geometry.vertices[j].x, geometry.vertices[j].y, geometry.vertices[j].z));
+                }
+
+                // Get faces
+                for (var j = 0; j < geometry.faces.length; j++) {
+                  faces.push([geometry.faces[j].a, geometry.faces[j].b, geometry.faces[j].c]);
+                }
+
+                // Construct polyhedron
+                var column_body = new CANNON.ConvexPolyhedron(verts, faces);
+
+                // Add to compound
+                body.addShape(column_body);
+
+                body.addShape(boxShape);
+                body.position.z = i * 2 - 2;
+
+                body.name = "Box Body " + i;
+                world.add(body);
+                bodies.push(body);
+              }
+
+            });
+            break;
 
         }
       }
 
-      function setFracturePattern(x, y, z) {
-        if (!fracturePattern) {
-          var shape = new THREE.SphereGeometry(0.2, 8, 8);
-          fracturePattern = new THREE.Mesh(shape, markerMaterial);
-          fracturePattern.name = "click marker";
-          scene.add(fracturePattern);
+      function setFracturePattern(pattern) {
+
+        if (fracturePattern) {
+          scene.remove(fracturePattern);
         }
+
+        switch(pattern) {
+          case "Sphere":
+
+            var shape = new THREE.SphereGeometry(0.2, 8, 8);
+            fracturePattern = new THREE.Mesh(shape, markerMaterial);
+            fracturePattern.name = "click marker";
+            scene.add(fracturePattern);
+
+            break;
+          case "Plane":
+            var shape = new THREE.PlaneGeometry(1, 1, 1);
+            fracturePattern = new THREE.Mesh(shape, markerMaterial);
+            fracturePattern.rotation.set(Math.PI / 2, 0, 0);
+            fracturePattern.scale.copy(new THREE.Vector3(2, 2, 2));
+            fracturePattern.name = "fracture pattern";
+            scene.add(fracturePattern);
+
+            break;
+
+        }
+
+      }
+
+      function moveFracturePattern(x, y, z) {
+
         fracturePattern.visible = true;
         fracturePattern.position.set(x, y, z);
       }
@@ -269,7 +353,7 @@
         if (entity) {
           var pos = entity.point;
           setScreenPerpCenter(pos, camera);
-          $('html').css('cursor','none');
+          $('html').css('cursor', 'none');
 
           // Move and project on the plane
           if (gplane) {
@@ -277,13 +361,13 @@
 
             if (pos) {
 
-              setFracturePattern(pos.x, pos.y, pos.z, scene);
+              moveFracturePattern(pos.x, pos.y, pos.z, scene);
               // moveJointToPoint(pos.x, pos.y, pos.z);
             }
           }
         } else {
           fracturePattern.visible = false;
-          $('html').css('cursor','');
+          $('html').css('cursor', '');
         }
       }
 
@@ -394,8 +478,8 @@
       }
 
       function onMouseUp(e) {
-      	return; 
-      	
+        return;
+
         constraintDown = false;
         // remove the marker
         removeClickMarker();
