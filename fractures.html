@@ -11,20 +11,91 @@
         padding: 0;
         overflow: hidden;
       }
+      #container {
+        position: absolute;
+        z-index: 1;
+      }
+      #options {
+        background-color: transparent;
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        right: 0;
+        color: white;
+        width: 220px;
+      }
+      ul {
+        list-style: none;
+        margin-top: 10px;
+      }
+      li {
+        border-radius: 5px;
+        border: 1px solid #888899;
+        height: 50px;
+        width: 50px;
+        padding: 10px;
+        float: left;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+      li:hover {
+        background-color: rgba(255,255,150, .2);
+      }
+      .option-set {
+        position: relative;
+      }
 		</style>
 	</head>
 	<body>
+
+		<div id="container">
+
+		</div>
+		<div id="options">
+			<div>
+				<div class="option-set">
+					Scenes
+				</div>
+				<ul id="scene-list">
+					<li>
+						Cubes
+					</li>
+					<li>
+						Pillars
+					</li>
+				</ul>
+			</div>
+			<div>
+				<div class="option-set">
+					Templates
+				</div>
+				<ul id="fracture-list">
+					<li>
+						Plane
+					</li>
+					<li>
+						Sphere
+					</li>
+				</ul>
+			</div>
+		</div>
+
+		<script src="http://code.jquery.com/jquery-2.1.3.min.js"></script>
 		<script src="js/libs/Three.js"></script>
 		<script src="js/libs/Detector.js"></script>
 		<script src="js/libs/cannon.js"></script>
 
 		<script>
-
+      $('#fracture-list>li').click(function(e) {
+        e.stopPropagation();
+        console.log(e);
+        setScene("cubes");
+      });
       var world;
       var dt = 1 / 60;
 
       var constraintDown = false;
-      var camera, scene, renderer, gplane = false, clickMarker = false;
+      var camera, scene, renderer, gplane = false, fracturePattern = false;
       var geometry, material, mesh;
       var controls, time = Date.now();
 
@@ -38,9 +109,9 @@
       var meshes = [], bodies = [];
 
       // Initialize Three.js
-      if (!Detector.webgl){
+      if (!Detector.webgl) {
         Detector.addGetWebGLMessage();
-        }
+      }
 
       initCannon();
       init();
@@ -50,8 +121,7 @@
 
         projector = new THREE.Projector();
 
-        container = document.createElement('div');
-        document.body.appendChild(container);
+        container = document.getElementById('container');
 
         // scene
         scene = new THREE.Scene();
@@ -111,34 +181,7 @@
         mesh.name = "ground plane";
         scene.add(mesh);
 
-        // cubes
-        var cubeGeo;
-        var cubeMaterial = new THREE.MeshPhongMaterial({
-          color : 0x3333ff
-        });
-        var mass = 5, radius = 1.3;
-        boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
-
-        for (var i = 0; i < n_cubes; i++) {
-          cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-          cubeMesh = new THREE.Mesh(cubeGeo, cubeMaterial);
-          cubeMesh.castShadow = true;
-          meshes.push(cubeMesh);
-          cubeMesh.name = "cube " + i;
-          scene.add(cubeMesh);
-
-          // boxes
-          boxBody = new CANNON.Body({
-            mass : mass
-          });
-          boxBody.addShape(boxShape);
-          boxBody.position.set(0, 5, 0);
-          boxBody.position.y = i * 2 + 2;
-
-          boxBody.name = "Box Body " + i;
-          world.add(boxBody);
-          bodies.push(boxBody);
-        }
+        setScene("cubes");
 
         renderer = new THREE.WebGLRenderer({
           antialias : true
@@ -159,35 +202,98 @@
         window.addEventListener("mouseup", onMouseUp, false);
       }
 
-      function setClickMarker(x, y, z) {
-        if (!clickMarker) {
-          var shape = new THREE.SphereGeometry(0.2, 8, 8);
-          clickMarker = new THREE.Mesh(shape, markerMaterial);
-          clickMarker.name = "click marker";
-          scene.add(clickMarker);
+      function setScene(scene_name) {
+        for (var m in meshes) {
+          scene.remove(m.name);
+
         }
-        clickMarker.visible = true;
-        clickMarker.position.set(x, y, z);
+        for (var b in bodies) {
+          world.remove(b);
+        }
+
+        switch(scene_name) {
+          case "cubes":
+            // cubes
+            var cubeGeo;
+            var cubeMaterial = new THREE.MeshPhongMaterial({
+              color : 0x3333ff
+            });
+            var mass = 5, radius = 1.3;
+            boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+
+            for (var i = 0; i < n_cubes; i++) {
+              cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+              cubeMesh = new THREE.Mesh(cubeGeo, cubeMaterial);
+              cubeMesh.castShadow = true;
+              meshes.push(cubeMesh);
+              cubeMesh.name = "cube " + i;
+              scene.add(cubeMesh);
+
+              // boxes
+              boxBody = new CANNON.Body({
+                mass : mass
+              });
+              boxBody.addShape(boxShape);
+              boxBody.position.set(0, 5, 0);
+              boxBody.position.y = i * 2 + 2;
+
+              boxBody.name = "Box Body " + i;
+              world.add(boxBody);
+              bodies.push(boxBody);
+            }
+
+            break;
+
+        }
       }
 
-      function removeClickMarker() {
-        clickMarker.visible = false;
+      function setFracturePattern(x, y, z) {
+        if (!fracturePattern) {
+          var shape = new THREE.SphereGeometry(0.2, 8, 8);
+          fracturePattern = new THREE.Mesh(shape, markerMaterial);
+          fracturePattern.name = "click marker";
+          scene.add(fracturePattern);
+        }
+        fracturePattern.visible = true;
+        fracturePattern.position.set(x, y, z);
+      }
+
+      function removeFracturePattern() {
+        fracturePattern.visible = false;
       }
 
       function onMouseMove(e) {
-        // Move and project on the plane
-        if (gplane && mouseConstraint) {
-          var pos = projectOntoPlane(e.clientX, e.clientY, gplane, camera);
-          if (pos) {
-            setClickMarker(pos.x, pos.y, pos.z, scene);
-            moveJointToPoint(pos.x, pos.y, pos.z);
+
+        var entity = findNearestIntersectingObject(e.clientX, e.clientY, camera, meshes);
+
+        if (entity) {
+          var pos = entity.point;
+          setScreenPerpCenter(pos, camera);
+          $('html').css('cursor','none');
+
+          // Move and project on the plane
+          if (gplane) {
+            var pos = projectOntoPlane(e.clientX, e.clientY, gplane, camera);
+
+            if (pos) {
+
+              setFracturePattern(pos.x, pos.y, pos.z, scene);
+              // moveJointToPoint(pos.x, pos.y, pos.z);
+            }
           }
+        } else {
+          fracturePattern.visible = false;
+          $('html').css('cursor','');
         }
       }
 
       function onMouseDown(e) {
         // Find mesh from a ray
         var entity = findNearestIntersectingObject(e.clientX, e.clientY, camera, meshes);
+        if (!entity) {
+          return;
+        }
+
         var pos = entity.point;
 
         var obj = entity.object;
@@ -222,7 +328,7 @@
               cubeMesh.castShadow = true;
               cubeMesh.scale.copy(new THREE.Vector3(obj.scale.x * .5, obj.scale.y * .5, obj.scale.z * .5));
               //cubeMesh.rotation.copy(obj.rotation);
-              
+
               cubeMesh.name = obj.name + "_" + (i + j + k);
 
               meshes.push(cubeMesh);
@@ -288,12 +394,14 @@
       }
 
       function onMouseUp(e) {
+      	return; 
+      	
         constraintDown = false;
         // remove the marker
         removeClickMarker();
 
         // Send the remove mouse joint to server
-        removeJointConstraint();
+        // removeJointConstraint();
       }
 
       var lastx, lasty, last;
@@ -386,14 +494,14 @@
         world.add(groundBody);
 
         // Joint body
-        var shape = new CANNON.Sphere(0.1);
-        jointBody = new CANNON.Body({
-          mass : 0
-        });
-        jointBody.addShape(shape);
-        jointBody.collisionFilterGroup = 0;
-        jointBody.collisionFilterMask = 0;
-        world.add(jointBody)
+        // var shape = new CANNON.Sphere(0.1);
+        // jointBody = new CANNON.Body({
+        // mass : 0
+        // });
+        // jointBody.addShape(shape);
+        // jointBody.collisionFilterGroup = 0;
+        // jointBody.collisionFilterMask = 0;
+        // world.add(jointBody)
       }
 
       function addMouseConstraint(x, y, z, body) {
@@ -432,7 +540,6 @@
         mouseConstraint = false;
       }
 
-    
 		</script>
 	</body>
 </html>
