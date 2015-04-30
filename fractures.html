@@ -192,7 +192,7 @@
         scene.add(mesh);
 
         setScene("Cubes");
-        setFracturePattern('Sphere');
+        setFracturePattern('Plane');
 
         renderer = new THREE.WebGLRenderer({
           antialias : true
@@ -247,7 +247,7 @@
                 mass : mass
               });
               boxBody.addShape(boxShape);
-              boxBody.position.y = i * 2 + 2;
+              boxBody.position.y = (i+1) * 1.25;
 
               boxBody.name = "Box Body " + i;
               world.add(boxBody);
@@ -281,6 +281,7 @@
                 body.addShape(getConvexHullFromGeometry(geometry));
 
                 body.position.z = i * 2 - 2;
+                body.position.y = (n_cubes-i+1) * .25;
 
                 body.name = "Box Body " + i;
                 world.add(body);
@@ -333,6 +334,8 @@
       }
 
       function getConvexHullFromGeometry(geometry,scale) {
+      	var scale = scale || 1;
+      	
         var verts = [], faces = [];
 
         // Get vertices
