@@ -424,7 +424,7 @@
               meshes.push(mesh);
 
               // var shape = new CANNON.Box(new CANNON.Vec3(mesh.scale.x / 2, mesh.scale.y / 2, mesh.scale.z / 2));
-              var shape =  getConvexHullFromGeometry(obj.geometry, 0.5);
+              var shape =  getConvexHullFromGeometry(obj.geometry);
               var body = new CANNON.Body({
                 mass : mass
               });
