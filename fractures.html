@@ -144,33 +144,26 @@
 				// controls = new THREE.TrackballControls( camera, renderer.domElement );
 
 				// lights
-				var light, materials;
+				var materials;
 				var temp_light = new THREE.AmbientLight(0x666666);
 				temp_light.name = "ambient light";
 				scene.add(temp_light);
 
-				light = new THREE.DirectionalLight(0xffffff, 1.75);
-				light.name = "directional light";
-				var d = 20;
+				var light1 = create_directional_light(1.5, 20, 20, 20);
+				light1.name = "directional light 1";
+				scene.add(light1);
 
-				light.position.set(d, d, d);
+				var light2 = create_directional_light(2, 20, 20, -20);
+				light2.name = "directional light 2";
+				scene.add(light2);
 
-				light.castShadow = true;
-				//light.shadowCameraVisible = true;
+				var light3 = create_directional_light(1, -20, 20, 20);
+				light3.name = "directional light 3";
+				scene.add(light3);
 
-				light.shadowMapWidth = 1024;
-				light.shadowMapHeight = 1024;
-
-				light.shadowCameraLeft = -d;
-				light.shadowCameraRight = d;
-				light.shadowCameraTop = d;
-				light.shadowCameraBottom = -d;
-
-				light.shadowCameraFar = 3 * d;
-				light.shadowCameraNear = d;
-				light.shadowDarkness = 0.5;
-
-				scene.add(light);
+				var light4 = create_directional_light(1.75, -20, 20, -20);
+				light4.name = "directional light 4";
+				scene.add(light4);
 
 				// floor
 				geometry = new THREE.PlaneGeometry(100, 100, 1, 1);
@@ -248,6 +241,30 @@
 				// world.add(jointBody)
 			}
 
+			function create_directional_light(strength, x, y, z) {
+				var light = new THREE.DirectionalLight(0xffffff, strength);
+				var d = 20;
+
+				light.position.set(x, y, z);
+
+				light.castShadow = true;
+				//light.shadowCameraVisible = true;
+
+				light.shadowMapWidth = 1024;
+				light.shadowMapHeight = 1024;
+
+				light.shadowCameraLeft = -d;
+				light.shadowCameraRight = d;
+				light.shadowCameraTop = d;
+				light.shadowCameraBottom = -d;
+
+				light.shadowCameraFar = 3 * d;
+				light.shadowCameraNear = d;
+				light.shadowDarkness = 0.5;
+
+				return light;
+			}
+
 			function setScene(scene_name) {
 				for (var m in meshes) {
 					scene.remove(meshes[m]);
@@ -270,7 +287,7 @@
 					case "Cubes":
 						// cubes
 						var cubeGeo;
-						var cubeMaterial = new THREE.MeshPhongMaterial({
+						var cubeMaterial = new THREE.MeshLambertMaterial({
 							color : 0x3333ff
 						});
 						var mass = 5;
@@ -278,19 +295,6 @@
 
 						for (var i = 0; i < n_cubes; i++) {
 							cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-
-							// cubeGeo = new THREE.Geometry();
-							// cubeGeo.vertices.push(new THREE.Vector3(0,0,0));
-							// cubeGeo.vertices.push(new THREE.Vector3(1,0,0));
-							// cubeGeo.vertices.push(new THREE.Vector3(0,0,1));
-							// cubeGeo.vertices.push(new THREE.Vector3(0,1,0));
-
-							// cubeGeo.faces.push(new THREE.Face3(0,1,2));
-							// cubeGeo.faces.push(new THREE.Face3(1,0,3));
-							// cubeGeo.faces.push(new THREE.Face3(0,2,3));
-							// cubeGeo.faces.push(new THREE.Face3(2,1,3));
-
-							// cubeGeo.computeFaceNormals();
 
 							cubeMesh = new THREE.Mesh(cubeGeo, cubeMaterial);
 							cubeMesh.castShadow = true;
@@ -382,6 +386,7 @@
 						scene.add(fracturesNormalsHelper);
 
 						break;
+
 					case "Plane":
 						var shape = new THREE.PlaneGeometry(1, 1);
 						fracturePattern = new THREE.Mesh(shape, markerMaterial);
@@ -401,11 +406,13 @@
 
 			function moveFracturePattern(x, y, z) {
 				fracturePattern.visible = true;
+				fracturesNormalsHelper.visible = true;
 				fracturePattern.position.set(x, y, z);
 			}
 
 			function removeFracturePattern() {
 				fracturePattern.visible = false;
+				fracturesNormalsHelper.visible = false;
 			}
 
 			function getConvexHullFromGeometry(geometry, scale_x, scale_y, scale_z) {
@@ -483,18 +490,65 @@
 				var pattern_faces = fracturePattern.geometry.faces;
 				var current_face;
 
-				var triangles;
+				var triangles_inside, triangles_outside;
 
-				// for (var i = 0; i < pattern_faces.length; i++) {
+				var mass = 5;
+
+				var mesh_inside = obj, mesh_outside = obj;
+
+				for (var i = 0; i < pattern_faces.length; i++) {
 					current_face = pattern_faces[0];
 
-					triangles = clip_face_with_mesh(fracturePattern, current_face, obj, true);
-					create_mesh(triangles);
+					triangles_inside = clip_face_with_mesh(fracturePattern, current_face, mesh_inside, true);
+					mesh_inside = create_mesh(triangles_inside);
 
-					// triangles = clip_face_with_mesh(fracturePattern, current_face, obj, false);
-					// create_mesh(triangles);
+					triangles_outside = clip_face_with_mesh(fracturePattern, current_face, mesh_outside, false);
+					mesh_outside = create_mesh(triangles_outside);
 
-				// }
+				}
+
+				mesh_inside.castShadow = true;
+				mesh_outside.castShadow = true;
+
+				meshes.push(mesh_inside);
+				meshes.push(mesh_outside);
+
+				// Create bodies
+				var shape = getConvexHullFromGeometry(mesh_inside.geometry, 0.5, 0.5, 0.5);
+				var body_inside = new CANNON.Body({
+					mass : mass
+				});
+
+				body_inside.addShape(shape);
+				body_inside.position.copy(mesh_inside.position);
+				body_inside.quaternion.copy(mesh_inside.quaternion);
+
+				world.add(body_inside);
+				bodies.push(body_inside);
+				scene.add(mesh_inside);
+
+				facesMeshHelper = new THREE.FaceNormalsHelper( mesh_inside, 0.3 );
+				meshNormals.push(facesMeshHelper)
+				scene.add(facesMeshHelper);				
+
+
+
+				var shape = getConvexHullFromGeometry(mesh_outside.geometry, 0.5, 0.5, 0.5);
+				var body_outside = new CANNON.Body({
+					mass : mass
+				});
+
+				body_outside.addShape(shape);
+				body_outside.position.copy(mesh_outside.position);
+				body_outside.quaternion.copy(mesh_outside.quaternion);
+
+				world.add(body_outside);
+				bodies.push(body_outside);
+				scene.add(mesh_outside);
+
+				facesMeshHelper = new THREE.FaceNormalsHelper( mesh_outside, 0.3 );
+				meshNormals.push(facesMeshHelper)
+				scene.add(facesMeshHelper);
 
 			}
 
@@ -529,6 +583,7 @@
 				var t;
 
 				var triangles = [];
+				var new_vertices = [];
 
 				mesh_to_clip.geometry.faces.forEach(function (mesh_face) {
 					// Get the normal of this face
@@ -583,6 +638,7 @@
 							intersection.addVectors(origin, direction);
 
 							mesh_face_vertices.push(intersection);
+							new_vertices = add_to_array_unique(new_vertices, intersection);
 						});
 
 						edge1.copy(mesh_face_vertices[1]);
@@ -616,6 +672,7 @@
 							intersection.addVectors(origin, direction);
 
 							mesh_face_vertices.push(intersection);
+							new_vertices = add_to_array_unique(new_vertices, intersection);
 						});
 
 						edge1.copy(mesh_face_vertices[1]);
@@ -653,40 +710,78 @@
 					else if (mesh_face_vertices.length == 3) {
 						triangles.push([mesh_face_vertices[0].clone(), mesh_face_vertices[1].clone(), mesh_face_vertices[2].clone()]);
 					}
-
 				});
+
+				if (new_vertices.length > 2) {
+					edge1.copy(new_vertices[1]);
+					edge1.sub(new_vertices[0]);
+
+					var angle, cross_norm, dot;
+					var new_vertices_angles = [];
+
+					new_vertices_angles.push([0, new_vertices[1].clone()]);
+
+					for (var i = 2; i < new_vertices.length; i++) {
+						edge2.copy(new_vertices[i]);
+						edge2.sub(new_vertices[0]);
+
+						temp_vector.crossVectors(edge1, edge2);
+						cross_norm = temp_vector.length();
+						dot = edge1.dot(edge2);
+
+						angle = Math.atan2(cross_norm, dot);
+
+						new_vertices_angles.push([angle, new_vertices[i].clone()]);
+					}
+
+					new_vertices_angles = new_vertices_angles.sort(comparator);
+
+					edge1.copy(new_vertices_angles[0][1]);
+					edge1.sub(new_vertices[0]);
+					edge2.copy(new_vertices_angles[1][1]);
+					edge1.sub(new_vertices[0]);
+
+					temp_vector.crossVectors(edge1, edge2);
+
+					var order;
+
+					if (temp_vector.dot(face_normal) > 0) {
+						order = true;
+					}
+					else {
+						order = false;
+					}
+
+					for (var i = 0; i < new_vertices_angles.length - 1; i++) {
+						if (order === true) {
+							triangles.push([new_vertices[0].clone(), new_vertices_angles[i][1].clone(), new_vertices_angles[i+1][1].clone()]);
+						}
+						else {
+							triangles.push([new_vertices[0].clone(), new_vertices_angles[i+1][1].clone(), new_vertices_angles[i][1].clone()]);
+						}
+					}
+				}
 
 				return triangles;
 
 			}
 
+			function comparator (a, b) {
+				if (a[0] < b[0]) return -1;
+				if (a[0] > b[0]) return 1;
+				return 0;
+			}
+
 			function create_mesh (triangles) {
 
 				var new_vertices = [];
-				var found;
 
-				// Add unique vertices to new_vertices, and round them
+				// Add unique vertices to new_vertices
 				triangles.forEach(function (triangle_vertices) {
 					triangle_vertices.forEach(function (vertex) {
-						vertex.x = Number((vertex.x).toFixed(4));
-						vertex.y = Number((vertex.y).toFixed(4));
-						vertex.z = Number((vertex.z).toFixed(4));
-
-						found = false;
-
-						new_vertices.forEach(function (current_vertex) {
-							if (current_vertex.x == vertex.x && current_vertex.y == vertex.y && current_vertex.z == vertex.z) {
-								found = true;
-							}
-						});
-
-						if (found == false) {
-							new_vertices.push(vertex);
-						}
+						new_vertices = add_to_array_unique(new_vertices, vertex);
 					});
 				});
-
-				var mass = 5;
 
 				var material = new THREE.MeshPhongMaterial({
 					color : 0xff0000,
@@ -705,13 +800,13 @@
 				// Find face indices and add faces to geometry
 				triangles.forEach(function (triangle_vertices) {
 					new_vertices.forEach(function (new_vertex) {
-						if (triangle_vertices[0].x == new_vertex.x && triangle_vertices[0].y == new_vertex.y && triangle_vertices[0].z == new_vertex.z) {
+						if (triangle_vertices[0].equals(new_vertex)) {
 							index0 = new_vertices.indexOf(new_vertex);
 						}
-						if (triangle_vertices[1].x == new_vertex.x && triangle_vertices[1].y == new_vertex.y && triangle_vertices[1].z == new_vertex.z) {
+						if (triangle_vertices[1].equals(new_vertex)) {
 							index1 = new_vertices.indexOf(new_vertex);
 						}
-						if (triangle_vertices[2].x == new_vertex.x && triangle_vertices[2].y == new_vertex.y && triangle_vertices[2].z == new_vertex.z) {
+						if (triangle_vertices[2].equals(new_vertex)) {
 							index2 = new_vertices.indexOf(new_vertex);
 						}
 					});
@@ -722,26 +817,33 @@
 				geometry.computeFaceNormals();
 
 				var mesh = new THREE.Mesh(geometry, material);
-				mesh.castShadow = true;
+				
+				return mesh;
+			}
 
-				meshes.push(mesh);
+			function add_to_array_unique (array, vector3) {
+				vector3 = clamp(vector3, 4);
 
-				// Create body
-				var shape = getConvexHullFromGeometry(geometry, 0.5, 0.5, 0.5);
-				var body = new CANNON.Body({
-					mass : mass
+				var found = false;
+				array.forEach(function (value) {
+					if (value.equals(vector3)) {
+						found = true;
+					}
 				});
-				body.addShape(shape);
-				body.position.copy(mesh.position);
-				body.quaternion.copy(mesh.quaternion);
 
-				world.add(body);
-				bodies.push(body);
-				scene.add(mesh);
+				if (found === false) {
+					array.push(vector3);
+				}
 
-				facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
-				meshNormals.push(facesMeshHelper)
-				scene.add(facesMeshHelper);
+				return array;
+			}
+
+			function clamp (vertex, digits) {
+				vertex.x = Number((vertex.x).toFixed(digits));
+				vertex.y = Number((vertex.y).toFixed(digits));
+				vertex.z = Number((vertex.z).toFixed(digits));
+
+				return vertex;
 			}
 
 			// This function creates a virtual movement plane for the mouseJoint to move in
