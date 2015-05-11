@@ -344,7 +344,7 @@
               });
               var mass = 5;
 
-              for (var i = 0; i < n_cubes; i++) {
+              for (var i = 0; i < 3; i++) {
 
                 var mesh = new THREE.Mesh(geometry, material);
                 mesh.castShadow = true;
@@ -365,7 +365,7 @@
                 body.addShape(getConvexHullFromGeometry(geometry));
 
                 body.position.z = i * 2 - 2;
-                body.position.y = (n_cubes - i + 1) * .25;
+                body.position.y = (n_cubes - i + 3) * .25;
 
                 body.name = "Box Body " + i;
                 world.add(body);
