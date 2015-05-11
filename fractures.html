@@ -153,17 +153,17 @@
 				light1.name = "directional light 1";
 				scene.add(light1);
 
-				var light2 = create_directional_light(2, 20, 20, -20);
-				light2.name = "directional light 2";
-				scene.add(light2);
+				// var light2 = create_directional_light(2, 20, 20, -20);
+				// light2.name = "directional light 2";
+				// scene.add(light2);
 
-				var light3 = create_directional_light(1, -20, 20, 20);
-				light3.name = "directional light 3";
-				scene.add(light3);
+				// var light3 = create_directional_light(1, -20, 20, 20);
+				// light3.name = "directional light 3";
+				// scene.add(light3);
 
-				var light4 = create_directional_light(1.75, -20, 20, -20);
-				light4.name = "directional light 4";
-				scene.add(light4);
+				// var light4 = create_directional_light(1.75, -20, 20, -20);
+				// light4.name = "directional light 4";
+				// scene.add(light4);
 
 				// floor
 				geometry = new THREE.PlaneGeometry(100, 100, 1, 1);
@@ -307,9 +307,9 @@
 
 							scene.add(edges);
 
-							facesMeshHelper = new THREE.FaceNormalsHelper( cubeMesh, 0.3 );
-							meshNormals.push(facesMeshHelper)
-							scene.add(facesMeshHelper);
+							// facesMeshHelper = new THREE.FaceNormalsHelper( cubeMesh, 0.3 );
+							// meshNormals.push(facesMeshHelper)
+							// scene.add(facesMeshHelper);
 
 							// boxes
 							boxBody = new CANNON.Body({
@@ -341,9 +341,9 @@
 								mesh.name = "pillar  " + i;
 								scene.add(mesh);
 
-								facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
-								meshNormals.push(facesMeshHelper)
-								scene.add(facesMeshHelper);
+								// facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
+								// meshNormals.push(facesMeshHelper)
+								// scene.add(facesMeshHelper);
 
 								// boxes
 								var body = new CANNON.Body({
@@ -527,9 +527,9 @@
 				bodies.push(body_inside);
 				scene.add(mesh_inside);
 
-				facesMeshHelper = new THREE.FaceNormalsHelper( mesh_inside, 0.3 );
-				meshNormals.push(facesMeshHelper)
-				scene.add(facesMeshHelper);				
+				// facesMeshHelper = new THREE.FaceNormalsHelper( mesh_inside, 0.3 );
+				// meshNormals.push(facesMeshHelper);
+				// scene.add(facesMeshHelper);
 
 
 
@@ -546,9 +546,9 @@
 				bodies.push(body_outside);
 				scene.add(mesh_outside);
 
-				facesMeshHelper = new THREE.FaceNormalsHelper( mesh_outside, 0.3 );
-				meshNormals.push(facesMeshHelper)
-				scene.add(facesMeshHelper);
+				// facesMeshHelper = new THREE.FaceNormalsHelper( mesh_outside, 0.3 );
+				// meshNormals.push(facesMeshHelper);
+				// scene.add(facesMeshHelper);
 
 			}
 
@@ -938,7 +938,7 @@
 				for (var i = 0; i !== meshes.length; i++) {
 					meshes[i].position.copy(bodies[i].position);
 					meshes[i].quaternion.copy(bodies[i].quaternion);
-					meshNormals[i].update();
+					// meshNormals[i].update();
 				}
 				fracturesNormalsHelper.update();
 			}
