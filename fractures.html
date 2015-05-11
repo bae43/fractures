@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Fractures</title>
-    <style>
+	<head>
+		<meta charset="utf-8">
+		<title>Fractures</title>
+		<style>
       html, body {
         width: 100%;
         height: 100%;
@@ -34,7 +34,7 @@
         height: 50px;
         width: 50px;
         padding: 10px;
-        float: left;
+/*        float: left;*/
         margin-left: 10px;
         cursor: pointer;
       }
@@ -44,48 +44,54 @@
       .option-set {
         position: relative;
       }
-    </style>
-  </head>
-  <body>
+		</style>
+	</head>
+	<body>
 
-    <div id="container">
+		<div id="container">
 
-    </div>
-    <div id="options">
-      <div>
-        <div class="option-set">
-          Scenes
-        </div>
-        <ul id="scene-list">
-          <li>
-            Cubes
-          </li>
-          <li>
-            Pillars
-          </li>
-        </ul>
-      </div>
-      <div>
-        <div class="option-set">
-          Templates
-        </div>
-        <ul id="fracture-list">
-          <li>
-            Plane
-          </li>
-          <li>
-            Sphere
-          </li>
-        </ul>
-      </div>
-    </div>
+		</div>
+		<div id="options">
+			<div>
+				<div class="option-set">
+					Scenes
+				</div>
+				<ul id="scene-list">
+					<li>
+						Cubes
+					</li>
+					<li>
+						Pillars
+					</li>
+					<li>
+						Spheres
+					</li>
+					<li>
+						Torus
+					</li>
+				</ul>
+			</div>
+			<div>
+				<div class="option-set">
+					Templates
+				</div>
+				<ul id="fracture-list">
+					<li>
+						Plane
+					</li>
+					<li>
+						Sphere
+					</li>
+				</ul>
+			</div>
+		</div>
 
-    <script src="js/libs/jquery.js"></script>
-    <script src="js/libs/Three.js"></script>
-    <script src="js/libs/Detector.js"></script>
-    <script src="js/libs/cannon.js"></script>
+		<script src="js/libs/jquery.js"></script>
+		<script src="js/libs/Three.js"></script>
+		<script src="js/libs/Detector.js"></script>
+		<script src="js/libs/cannon.js"></script>
 
-    <script>
+		<script>
       $('#scene-list li').click(function(e) {
         e.stopPropagation();
         setScene($.trim(e.target.textContent));
@@ -107,6 +113,7 @@
       var jointBody, constrainedBody, mouseConstraint;
 
       var n_cubes = 3;
+      var draw_mesh_wireframes = false;
 
       var container, camera, scene, renderer, projector, loader;
 
@@ -176,13 +183,13 @@
         geometry = new THREE.PlaneGeometry(100, 100, 1, 1);
         //geometry.applyMatrix( new THREE.Matrix4().makeRotationX( -Math.PI / 2 ) );
         material = new THREE.MeshLambertMaterial({
-          color : 0x777777
+          color : 0x777777,
         });
         markerMaterial = new THREE.MeshLambertMaterial({
           color : 0xff0000,
           side : THREE.DoubleSide,
           transparent : true,
-          opacity: 0.6,
+          opacity : 0.6,
         });
         //THREE.ColorUtils.adjustHSV( material.color, 0, 0, 0.9 );
         mesh = new THREE.Mesh(geometry, material);
@@ -226,19 +233,55 @@
         }
         bodies = [];
 
+        var material = new THREE.MeshPhongMaterial({
+          color : 0x3333ff,
+          wireframe : draw_mesh_wireframes,
+        });
+
         switch(scene_name) {
           case "Cubes":
-            // cubes
+
+            // loader.load("rsc/models/box.js", function(geometry) {
+            //
+            // var material = new THREE.MeshPhongMaterial({
+            // color : 0x3333ff
+            // });
+            // var mass = 5;
+            //
+            // for (var i = 0; i < n_cubes; i++) {
+            //
+            // var mesh = new THREE.Mesh(geometry, material);
+            // mesh.castShadow = true;
+            // meshes.push(mesh);
+            // mesh.name = "box  " + i;
+            // scene.add(mesh);
+            //
+            // // boxes
+            // var body = new CANNON.Body({
+            // mass : mass
+            // });
+            //
+            // // Add to compound
+            // body.addShape(getConvexHullFromGeometry(geometry));
+            //
+            //
+            // body.position.y = (i+1) * 1.25;
+            //
+            // body.name = "Box Body " + i;
+            // world.add(body);
+            // bodies.push(body);
+            // }
+            //
+            // });
+
+            // // cubes
             var cubeGeo;
-            var cubeMaterial = new THREE.MeshPhongMaterial({
-              color : 0x3333ff
-            });
             var mass = 5;
             boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
 
             for (var i = 0; i < n_cubes; i++) {
               cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-              cubeMesh = new THREE.Mesh(cubeGeo, cubeMaterial);
+              cubeMesh = new THREE.Mesh(cubeGeo, material);
               cubeMesh.castShadow = true;
               meshes.push(cubeMesh);
               cubeMesh.name = "cube " + i;
@@ -249,7 +292,7 @@
                 mass : mass
               });
               boxBody.addShape(boxShape);
-              boxBody.position.y = (i+1) * 1.25;
+              boxBody.position.y = (i + 1) * 1.25;
 
               boxBody.name = "Box Body " + i;
               world.add(boxBody);
@@ -258,11 +301,8 @@
 
             break;
           case "Pillars":
-            loader.load("rsc/fracture_templates/pillar-simple.js", function(geometry) {
+            loader.load("rsc/models/pillar-simple.js", function(geometry) {
 
-              var material = new THREE.MeshPhongMaterial({
-                color : 0x3333ff
-              });
               var mass = 5;
 
               for (var i = 0; i < n_cubes; i++) {
@@ -282,12 +322,72 @@
                 body.addShape(getConvexHullFromGeometry(geometry));
 
                 body.position.z = i * 2 - 2;
-                body.position.y = (n_cubes-i+1) * .25;
+                body.position.y = (n_cubes - i + 4) * .25;
 
                 body.name = "Box Body " + i;
                 world.add(body);
                 bodies.push(body);
               }
+
+            });
+            break;
+
+          case "Spheres":
+            loader.load("rsc/models/ball.js", function(geometry) {
+
+              var mass = 5;
+
+              for (var i = 0; i < 6; i++) {
+
+                var mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                meshes.push(mesh);
+                mesh.name = "pillar  " + i;
+                scene.add(mesh);
+
+                // boxes
+                var body = new CANNON.Body({
+                  mass : mass
+                });
+
+                // Add to compound
+                body.addShape(getConvexHullFromGeometry(geometry));
+
+                body.position.z = i * 2 - 2;
+                body.position.y = (n_cubes - i + 4) * .25;
+
+                body.name = "Box Body " + i;
+                world.add(body);
+                bodies.push(body);
+              }
+
+            });
+            break;
+
+          case "Torus":
+            loader.load("rsc/models/doughnut.js", function(geometry) {
+
+              var mass = 5;
+
+              var mesh = new THREE.Mesh(geometry, material);
+              mesh.castShadow = true;
+              meshes.push(mesh);
+              mesh.name = "torus";
+              scene.add(mesh);
+
+              // boxes
+              var body = new CANNON.Body({
+                mass : mass
+              });
+
+              // Add to compound
+              body.addShape(getConvexHullFromGeometry(geometry));
+
+              body.position.y = 4;
+
+              body.name = "Torus Body";
+              world.add(body);
+              bodies.push(body);
 
             });
             break;
@@ -337,7 +437,7 @@
         var scale_x = scale_x || 1;
         var scale_y = scale_y || 1;
         var scale_z = scale_z || 1;
-        
+
         var verts = [], faces = [];
 
         // Get vertices
@@ -416,7 +516,8 @@
         var mass = 5;
 
         var material = new THREE.MeshPhongMaterial({
-          color : 0xff0000
+          color : 0xff0000,
+          wireframe : draw_mesh_wireframes,
         });
         var hue = Math.random();
         material.color.setHSL(hue, 1, 0.5);
@@ -443,7 +544,8 @@
         scene.add(mesh);
 
         var material = new THREE.MeshPhongMaterial({
-          color : 0xff0000
+          color : 0xff0000,
+          wireframe : draw_mesh_wireframes,
         });
         var hue = Math.random();
         material.color.setHSL(hue, 1, 0.5);
@@ -498,7 +600,6 @@
         //       // body.quaternion.setFromEuler(obj.rotation);
         //       // body.quaternion.setFromAxisAngle(new CANNON.Vec3(obj.rotation.x, obj.rotation.y, obj.rotation.z), 1);
 
-              
         //       body.position.copy(obj.position);
         //       body.quaternion.copy(obj.quaternion);
         //       body.position.x += (obj.scale.x / 2) * (i - 0.5);
@@ -701,21 +802,25 @@
         var delta = 1;
         event = event || window.event;
         var keycode = event.keyCode;
-        switch (keycode){
-          case 37 : // left arrow 向左箭头
-          camera.position.z = camera.position.z + delta;
-          break;
-        case 38 : // up arrow 向上箭头 
-          camera.position.y = camera.position.y + delta;
-          break;
-        case 39 : // right arrow 向右箭头
-          camera.position.z = camera.position.z - delta;
-          break;
-        case 40 : //down arrow向下箭头
-          camera.position.y = camera.position.y - delta;
-          break;
+        switch (keycode) {
+          case 37 :
+            // left arrow 向左箭头
+            camera.position.z = camera.position.z + delta;
+            break;
+          case 38 :
+            // up arrow 向上箭头
+            camera.position.y = camera.position.y + delta;
+            break;
+          case 39 :
+            // right arrow 向右箭头
+            camera.position.z = camera.position.z - delta;
+            break;
+          case 40 :
+            //down arrow向下箭头
+            camera.position.y = camera.position.y - delta;
+            break;
         }
       }
-    </script>
-  </body>
+		</script>
+	</body>
 </html>
