@@ -4,48 +4,47 @@
 		<meta charset="utf-8">
 		<title>Fractures</title>
 		<style>
-		
-			html, body {
-			width: 100%;
-			height: 100%;
-			margin: 0;
-			padding: 0;
-			overflow: hidden;
-			}
-			#container {
-			position: absolute;
-			z-index: 1;
-			}
-			#options {
-			background-color: transparent;
-			position: absolute;
-			z-index: 2;
-			top: 0;
-			right: 0;
-			color: white;
-			width: 220px;
-			}
-			ul {
-			list-style: none;
-			margin-top: 10px;
-			}
-			li {
-			border-radius: 5px;
-			border: 1px solid #888899;
-			height: 50px;
-			width: 50px;
-			padding: 10px;
-			/*        float: left;*/
-			margin-left: 10px;
-			cursor: pointer;
-			}
-			li:hover {
-			background-color: rgba(255,255,150, .2);
-			}
-			.option-set {
-			position: relative;
-			}
-	
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      #container {
+        position: absolute;
+        z-index: 1;
+      }
+      #options {
+        background-color: transparent;
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        right: 0;
+        color: white;
+        width: 220px;
+      }
+      ul {
+        list-style: none;
+        margin-top: 10px;
+      }
+      li {
+        border-radius: 5px;
+        border: 1px solid #888899;
+        height: 50px;
+        width: 50px;
+        padding: 10px;
+        /*        float: left;*/
+        margin-left: 10px;
+        cursor: pointer;
+      }
+      li:hover {
+        background-color: rgba(255,255,150, .2);
+      }
+      .option-set {
+        position: relative;
+      }
+
 		</style>
 	</head>
 	<body>
@@ -96,7 +95,6 @@
 		<script src="js/libs/cannon.js"></script>
 
 		<script>
-
       $('#scene-list li').click(function(e) {
         e.stopPropagation();
         setScene($.trim(e.target.textContent));
@@ -118,11 +116,12 @@
       var jointBody, constrainedBody, mouseConstraint;
 
       var n_cubes = 1;
+      THREE.Object3D.prototype.isGroup = true;
 
       var container, camera, scene, renderer, projector, loader;
 
       // To be synced
-      var meshes = [], bodies = [], meshNormals = [];
+      var meshes = [], bodies = [], bodyWires = [], meshNormals = [];
 
       // Initialize Three.js
       if (!Detector.webgl) {
@@ -280,6 +279,9 @@
         for (var m in meshes) {
           scene.remove(meshes[m]);
         }
+        for(var w in bodyWires){
+        	scene.remove(bodyWires[w]);
+        }
         meshes = [];
 
         for (var b in bodies) {
@@ -287,6 +289,7 @@
         }
 
         bodies = [];
+        bodyWires = [];
 
         for (var mn in meshNormals) {
           scene.remove(meshNormals[mn]);
@@ -302,15 +305,18 @@
               color : 0x3333ff
             });
             var mass = 5;
-            boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
 
             for (var i = 0; i < n_cubes; i++) {
               cubeGeo = new THREE.BoxGeometry(1, 1, 1);
 
               cubeMesh = new THREE.Mesh(cubeGeo, cubeMaterial);
               cubeMesh.castShadow = true;
+
               meshes.push(cubeMesh);
+
+              // meshes.push(cubeMesh);
               cubeMesh.name = "cube " + i;
+
               scene.add(cubeMesh);
 
               var edges = new THREE.EdgesHelper(cubeMesh, 0x0000ff);
@@ -323,16 +329,21 @@
               // scene.add(facesMeshHelper);
 
               // boxes
+
               boxBody = new CANNON.Body({
                 mass : mass
               });
 
-              boxBody.addShape(boxShape);
+              boxBody.addShape(getBodyFromGeometry(cubeMesh.geometry));
               boxBody.position.y = (i + 1) * 1.25;
+              boxBody.position.z = 0;
 
               boxBody.name = "Box Body " + i;
               world.add(boxBody);
               bodies.push(boxBody);
+
+              bodyWires.push(getMeshFromBody(boxBody));
+
             }
 
             break;
@@ -362,7 +373,7 @@
                 });
 
                 // Add to compound
-                body.addShape(getConvexHullFromGeometry(geometry));
+                body.addShape(getBodyFromGeometry(geometry));
 
                 body.position.z = i * 2 - 2;
                 body.position.y = (n_cubes - i + 3) * .25;
@@ -370,11 +381,12 @@
                 body.name = "Box Body " + i;
                 world.add(body);
                 bodies.push(body);
+                bodyWires.push(getMeshFromBody(body));
               }
 
             });
             break;
-            case "Spheres":
+          case "Spheres":
             loader.load("rsc/models/ball.js", function(geometry) {
 
               var material = new THREE.MeshPhongMaterial({
@@ -400,7 +412,7 @@
                 });
 
                 // Add to compound
-                body.addShape(getConvexHullFromGeometry(geometry));
+                body.addShape(getBodyFromGeometry(geometry));
 
                 body.position.y = 2;
                 body.position.z = (i + -2) * 2;
@@ -408,11 +420,12 @@
                 body.name = "Box Body " + i;
                 world.add(body);
                 bodies.push(body);
+                bodyWires.push(getMeshFromBody(body));
               }
 
             });
-            break;            
-            case "Torus":
+            break;
+          case "Torus":
             loader.load("rsc/models/doughnut.js", function(geometry) {
 
               var material = new THREE.MeshPhongMaterial({
@@ -420,33 +433,30 @@
               });
               var mass = 5;
 
-       
+              var mesh = new THREE.Mesh(geometry, material);
+              mesh.castShadow = true;
+              meshes.push(mesh);
+              mesh.name = "torus  " + i;
+              scene.add(mesh);
 
-                var mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                meshes.push(mesh);
-                mesh.name = "torus  " + i;
-                scene.add(mesh);
+              // facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
+              // meshNormals.push(facesMeshHelper)
+              // scene.add(facesMeshHelper);
 
-                // facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
-                // meshNormals.push(facesMeshHelper)
-                // scene.add(facesMeshHelper);
+              // boxes
+              var body = new CANNON.Body({
+                mass : mass
+              });
 
-                // boxes
-                var body = new CANNON.Body({
-                  mass : mass
-                });
+              // Add to compound
+              body.addShape(getBodyFromGeometry(geometry));
 
-                // Add to compound
-                body.addShape(getConvexHullFromGeometry(geometry));
+              body.position.y = 3;
 
-
-                body.position.y = 3;
-
-                body.name = "Torus Box Body";
-                world.add(body);
-                bodies.push(body);
-         
+              body.name = "Torus Box Body";
+              world.add(body);
+              bodies.push(body);
+              bodyWires.push(getMeshFromBody(body));
 
             });
             break;
@@ -502,7 +512,7 @@
         fracturesNormalsHelper.visible = false;
       }
 
-      function getConvexHullFromGeometry(geometry, scale_x, scale_y, scale_z) {
+      function getBodyFromGeometry(geometry, scale_x, scale_y, scale_z) {
         var scale_x = scale_x || 1;
         var scale_y = scale_y || 1;
         var scale_z = scale_z || 1;
@@ -521,6 +531,34 @@
 
         // Construct polyhedron
         return new CANNON.ConvexPolyhedron(verts, faces);
+      }
+
+      function getMeshFromBody(body) {
+
+        var geometry = new THREE.Geometry();
+        for (var i = 0; i < body.shapes.length; i++) {
+          var s = body.shapes[i];
+          for (var j = 0; j < s.vertices.length; j++) {
+            var v = s.vertices[j];
+            geometry.vertices.push(new THREE.Vector3(v.x, v.y, v.z));
+
+          }
+          for (var j = 0; j < s.faces.length; j++) {
+            var f = s.faces[j];
+            geometry.faces.push(new THREE.Face3(f[0], f[1], f[2]));
+          }
+        }
+
+        var material = new THREE.MeshBasicMaterial({
+          color : 0x00ff00,
+          wireframe : true,
+        });
+
+		// var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+        var wire = new THREE.Mesh(geometry, material);
+        // wire.scale.set(1.01,1.01,1.01);
+        scene.add(wire);
+        return wire;
       }
 
       function onMouseMove(e) {
@@ -564,11 +602,16 @@
         // remove from meshes
         for (var i in meshes) {
           if (meshes[i] == obj) {
+          	
             meshes.splice(i, 1);
             world.remove(bodies[i]);
+            
             bodies.splice(i, 1);
             scene.remove(meshNormals[i]);
             meshNormals.splice(i, 1);
+            
+            scene.remove(bodyWires[i]);
+            bodyWires.splice(i, 1);
 
             break;
           }
@@ -587,9 +630,16 @@
           current_face = pattern_faces[0];
 
           triangles_inside = clip_face_with_mesh(fracturePattern, current_face, mesh_inside, true);
-          mesh_inside = create_mesh(triangles_inside);
-
           triangles_outside = clip_face_with_mesh(fracturePattern, current_face, mesh_outside, false);
+          
+          // do nothing if no intersection - do not create an empty mesh
+          if(triangles_inside.length == 0 || triangles_outside.length == 0){
+          	
+          	console.warn('WARNING. creating mesh of zero triangles');
+          	return;
+          }
+
+          mesh_inside = create_mesh(triangles_inside);
           mesh_outside = create_mesh(triangles_outside);
 
         }
@@ -599,9 +649,11 @@
 
         meshes.push(mesh_inside);
         meshes.push(mesh_outside);
+        
+       
 
         // Create bodies
-        var shape = getConvexHullFromGeometry(mesh_inside.geometry, 0.5, 0.5, 0.5);
+        var shape = getBodyFromGeometry(mesh_inside.geometry);
         var body_inside = new CANNON.Body({
           mass : mass
         });
@@ -613,12 +665,14 @@
         world.add(body_inside);
         bodies.push(body_inside);
         scene.add(mesh_inside);
+        
+         bodyWires.push(getMeshFromBody(body_inside));
 
         // facesMeshHelper = new THREE.FaceNormalsHelper( mesh_inside, 0.3 );
         // meshNormals.push(facesMeshHelper);
         // scene.add(facesMeshHelper);
 
-        var shape = getConvexHullFromGeometry(mesh_outside.geometry, 0.5, 0.5, 0.5);
+        var shape = getBodyFromGeometry(mesh_outside.geometry);
         var body_outside = new CANNON.Body({
           mass : mass
         });
@@ -630,6 +684,8 @@
         world.add(body_outside);
         bodies.push(body_outside);
         scene.add(mesh_outside);
+        
+        bodyWires.push(getMeshFromBody(body_outside));
 
         // facesMeshHelper = new THREE.FaceNormalsHelper( mesh_outside, 0.3 );
         // meshNormals.push(facesMeshHelper);
@@ -1018,10 +1074,15 @@
       function updatePhysics() {
         world.step(dt);
         for (var i = 0; i !== meshes.length; i++) {
+
           meshes[i].position.copy(bodies[i].position);
           meshes[i].quaternion.copy(bodies[i].quaternion);
           // meshNormals[i].update();
+
+          bodyWires[i].position.copy(bodies[i].position);
+          bodyWires[i].quaternion.copy(bodies[i].quaternion);
         }
+
         fracturesNormalsHelper.update();
       }
 
