@@ -280,6 +280,8 @@ function setScene(scene_name) {
 			break;
 
 		case "Torus":
+			var mass = 5;
+			
 			var body = new CANNON.Body({
 				mass : mass
 			});
@@ -288,7 +290,6 @@ function setScene(scene_name) {
 				color : 0x3333ff,
 				shading : THREE.FlatShading,
 			});
-			var mass = 5;
 
 			body.position.y = 3;
 
@@ -302,17 +303,10 @@ function setScene(scene_name) {
 				loader.load("rsc/scenes/torus/torus-" + i + ".js", function(new_geo) {
 					THREE.GeometryUtils.merge(geometry, new_geo);
 
-					// facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
-					// meshNormals.push(facesMeshHelper)
-					// scene.add(facesMeshHelper);
-
-					// boxes
-
 					// Add to compound
 					body.addShape(getBodyFromGeometry(geometry));
 
 					if (--segments_left == 0) {
-
 						var mesh = new THREE.Mesh(geometry, material);
 						mesh.castShadow = true;
 						meshes.push(mesh);
@@ -322,11 +316,9 @@ function setScene(scene_name) {
 						world.add(body);
 						bodies.push(body);
 						bodyWires.push(getMeshFromBody(body));
-						alert("done");
 					}
 
 				});
-
 			}
 
 			break;
