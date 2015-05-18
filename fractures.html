@@ -441,39 +441,56 @@
             });
             break;
           case "Torus":
-            loader.load("rsc/models/doughnut.js", function(geometry) {
-
-              var material = new THREE.MeshPhongMaterial({
-                color : 0x3333ff
-              });
-              var mass = 5;
-
-              var mesh = new THREE.Mesh(geometry, material);
-              mesh.castShadow = true;
-              meshes.push(mesh);
-              mesh.name = "torus  " + i;
-              scene.add(mesh);
-
-              // facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
-              // meshNormals.push(facesMeshHelper)
-              // scene.add(facesMeshHelper);
-
-              // boxes
-              var body = new CANNON.Body({
-                mass : mass
-              });
-
-              // Add to compound
-              body.addShape(getBodyFromGeometry(geometry));
-
-              body.position.y = 3;
-
-              body.name = "Torus Box Body";
-              world.add(body);
-              bodies.push(body);
-              bodyWires.push(getMeshFromBody(body));
-
+            var body = new CANNON.Body({
+              mass : mass
             });
+
+            var material = new THREE.MeshPhongMaterial({
+              color : 0x3333ff,
+              shading : THREE.FlatShading,
+            });
+            var mass = 5;
+
+            body.position.y = 3;
+
+            body.name = "Torus Box Body";
+
+            var segments_left = 16;
+
+            var geometry = new THREE.Geometry();
+
+            for (var i = 1; i <= 16; i++) {
+              loader.load("rsc/scenes/torus/torus-" + i + ".js", function(new_geo) {
+
+                THREE.GeometryUtils.merge(geometry, new_geo);
+
+                // facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
+                // meshNormals.push(facesMeshHelper)
+                // scene.add(facesMeshHelper);
+
+                // boxes
+
+                // Add to compound
+                body.addShape(getBodyFromGeometry(geometry));
+
+                if (--segments_left == 0) {
+
+                  var mesh = new THREE.Mesh(geometry, material);
+                  mesh.castShadow = true;
+                  meshes.push(mesh);
+                  mesh.name = "torus  " + i;
+                  scene.add(mesh);
+
+                  world.add(body);
+                  bodies.push(body);
+                  bodyWires.push(getMeshFromBody(body));
+                  alert("done");
+                }
+
+              });
+
+            }
+
             break;
 
         }
