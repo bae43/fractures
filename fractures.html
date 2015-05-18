@@ -29,6 +29,7 @@
         margin-top: 10px;
       }
       li {
+        position: relative;
         border-radius: 5px;
         border: 1px solid #888899;
         height: 50px;
@@ -37,12 +38,21 @@
         /*        float: left;*/
         margin-left: 10px;
         cursor: pointer;
+        background-size: cover;
+        background-position: center;
+        color: #dedede;
+        font-family: monospace;
       }
       li:hover {
-        background-color: rgba(255,255,150, .2);
+        border: 1px solid #FFFFFF;
+        color: #FFFFFF;
       }
       .option-set {
         position: relative;
+      }
+      li .tile-label {
+        position: absolute;
+        bottom: 5px;
       }
 
 		</style>
@@ -79,11 +89,15 @@
 					Templates
 				</div>
 				<ul id="fracture-list">
-					<li>
-						Plane
+					<li style="background-image: url('rsc/fracture_templates/plane/plane.jpg')">
+						<div class="tile-label">
+							Plane
+						</div>
 					</li>
-					<li>
-						Sphere
+					<li style="background-image: url('rsc/fracture_templates/trisplit/trisplit.jpg')">
+						<div class="tile-label">
+							Tri-Split
+						</div>
 					</li>
 				</ul>
 			</div>
@@ -109,7 +123,7 @@
       var dt = 1 / 60;
 
       var constraintDown = false;
-      var camera, scene, renderer, gplane = false, fracturePattern = false, fracturesNormalsHelper;
+      var camera, scene, renderer, gplane = false, fracturePattern = false, fracturePatternCuts = [], fracturePatternName = "", fracturesNormalsHelper;
       var geometry, material, mesh;
       var controls, time = Date.now();
 
@@ -162,18 +176,6 @@
         var light1 = create_directional_light(1.5, 20, 20, 20);
         light1.name = "directional light 1";
         scene.add(light1);
-
-        // var light2 = create_directional_light(2, 20, 20, -20);
-        // light2.name = "directional light 2";
-        // scene.add(light2);
-
-        // var light3 = create_directional_light(1, -20, 20, 20);
-        // light3.name = "directional light 3";
-        // scene.add(light3);
-
-        // var light4 = create_directional_light(1.75, -20, 20, -20);
-        // light4.name = "directional light 4";
-        // scene.add(light4);
 
         // floor
         geometry = new THREE.PlaneGeometry(100, 100, 1, 1);
@@ -279,8 +281,8 @@
         for (var m in meshes) {
           scene.remove(meshes[m]);
         }
-        for(var w in bodyWires){
-        	scene.remove(bodyWires[w]);
+        for (var w in bodyWires) {
+          scene.remove(bodyWires[w]);
         }
         meshes = [];
 
@@ -471,34 +473,68 @@
           scene.remove(fracturesNormalsHelper);
         }
 
+        // do nothing if no change
+        if (fracturePatternName == pattern) {
+          return;
+        }
+        fracturePatternCuts = [];
+
         switch(pattern) {
-          case "Sphere":
+          case "Tri-Split":
 
-            var shape = new THREE.SphereGeometry(0.2, 8, 8);
-            fracturePattern = new THREE.Mesh(shape, markerMaterial);
-            fracturePattern.name = "click marker";
-            scene.add(fracturePattern);
+            loader.load("rsc/fracture_templates/trisplit/trisplit.js", function(geometry) {
+              fracturePattern = new THREE.Mesh(geometry, markerMaterial);
+              fracturePattern.name = "click marker";
+              scene.add(fracturePattern);
 
-            fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
-            scene.add(fracturesNormalsHelper);
+              fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
+              scene.add(fracturesNormalsHelper);
+
+              var numCuts = 3;
+
+              loadCuts("trisplit", 3);
+
+            });
 
             break;
 
           case "Plane":
-            var shape = new THREE.PlaneGeometry(1, 1);
-            fracturePattern = new THREE.Mesh(shape, markerMaterial);
-            fracturePattern.rotation.set(Math.PI / 2, 0, 0);
-            fracturePattern.scale.copy(new THREE.Vector3(2, 2, 2));
-            fracturePattern.name = "fracture pattern";
-            scene.add(fracturePattern);
+            // var shape = new THREE.PlaneGeometry(1, 1);
+            // fracturePattern = new THREE.Mesh(shape, markerMaterial);
+            // fracturePattern.rotation.set(Math.PI / 2, 0, 0);
+            // fracturePattern.scale.copy(new THREE.Vector3(2, 2, 2));
+            // fracturePattern.name = "fracture pattern";
+            // scene.add(fracturePattern);
+            //
+            // fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
+            // scene.add(fracturesNormalsHelper);
 
-            fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
-            scene.add(fracturesNormalsHelper);
+            loader.load("rsc/fracture_templates/plane/plane.js", function(geometry) {
+              fracturePattern = new THREE.Mesh(geometry, markerMaterial);
+              fracturePattern.name = "click marker";
+              scene.add(fracturePattern);
+
+              fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
+              scene.add(fracturesNormalsHelper);
+
+              loadCuts("plane", 2);
+
+            });
 
             break;
 
         }
 
+        fracturePatternName = pattern;
+
+      }
+
+      function loadCuts(dirname, numCuts) {
+        for (var i = 1; i <= numCuts; i++) {
+          loader.load("rsc/fracture_templates/" + dirname + "/" + dirname + "-" + i + ".js", function(geometry) {
+            fracturePatternCuts.push(geometry);
+          });
+        }
       }
 
       function moveFracturePattern(x, y, z) {
@@ -554,7 +590,7 @@
           wireframe : true,
         });
 
-		// var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+        // var geometry = new THREE.BoxGeometry( 1, 1, 1 );
         var wire = new THREE.Mesh(geometry, material);
         // wire.scale.set(1.01,1.01,1.01);
         scene.add(wire);
@@ -602,14 +638,14 @@
         // remove from meshes
         for (var i in meshes) {
           if (meshes[i] == obj) {
-          	
+
             meshes.splice(i, 1);
             world.remove(bodies[i]);
-            
+
             bodies.splice(i, 1);
             scene.remove(meshNormals[i]);
             meshNormals.splice(i, 1);
-            
+
             scene.remove(bodyWires[i]);
             bodyWires.splice(i, 1);
 
@@ -617,87 +653,67 @@
           }
         }
 
-        var pattern_faces = fracturePattern.geometry.faces;
-        var current_face;
+        for (var i = 0; i < fracturePatternCuts.length; i++) {
 
-        var triangles_inside, triangles_outside;
+          var this_cut = fracturePatternCuts[i];
+          var pattern_faces = this_cut.faces;
 
-        var mass = 5;
+          var current_face;
 
-        var mesh_inside = obj, mesh_outside = obj;
+          var triangles_inside;
 
-        for (var i = 0; i < pattern_faces.length; i++) {
-          current_face = pattern_faces[0];
+          var mass = 5;
 
-          triangles_inside = clip_face_with_mesh(fracturePattern, current_face, mesh_inside, true);
-          triangles_outside = clip_face_with_mesh(fracturePattern, current_face, mesh_outside, false);
-          
-          // do nothing if no intersection - do not create an empty mesh
-          if(triangles_inside.length == 0 || triangles_outside.length == 0){
-          	
-          	console.warn('WARNING. creating mesh of zero triangles');
-          	return;
+          var mesh_inside = obj;
+
+          for (var j = 0; j < pattern_faces.length; j++) {
+            current_face = pattern_faces[j];
+
+            var worldMatrix = fracturePattern.matrixWorld;
+            triangles_inside = clip_face_with_geometry(this_cut, worldMatrix, current_face, mesh_inside, true);
+
+            // do nothing if no intersection - do not create an empty mesh
+            if (triangles_inside.length == 0) {
+
+              console.warn('WARNING. creating mesh of zero triangles');
+              return;
+            }
+
+            mesh_inside = create_mesh(triangles_inside);
+
           }
 
-          mesh_inside = create_mesh(triangles_inside);
-          mesh_outside = create_mesh(triangles_outside);
+          mesh_inside.castShadow = true;
 
+          meshes.push(mesh_inside);
+
+          // Create bodies
+          var shape = getBodyFromGeometry(mesh_inside.geometry);
+          var body_inside = new CANNON.Body({
+            mass : mass
+          });
+
+          body_inside.addShape(shape);
+          body_inside.position.copy(mesh_inside.position);
+          body_inside.quaternion.copy(mesh_inside.quaternion);
+
+          world.add(body_inside);
+          bodies.push(body_inside);
+          scene.add(mesh_inside);
+
+          bodyWires.push(getMeshFromBody(body_inside));
         }
-
-        mesh_inside.castShadow = true;
-        mesh_outside.castShadow = true;
-
-        meshes.push(mesh_inside);
-        meshes.push(mesh_outside);
-        
-       
-
-        // Create bodies
-        var shape = getBodyFromGeometry(mesh_inside.geometry);
-        var body_inside = new CANNON.Body({
-          mass : mass
-        });
-
-        body_inside.addShape(shape);
-        body_inside.position.copy(mesh_inside.position);
-        body_inside.quaternion.copy(mesh_inside.quaternion);
-
-        world.add(body_inside);
-        bodies.push(body_inside);
-        scene.add(mesh_inside);
-        
-         bodyWires.push(getMeshFromBody(body_inside));
-
         // facesMeshHelper = new THREE.FaceNormalsHelper( mesh_inside, 0.3 );
-        // meshNormals.push(facesMeshHelper);
-        // scene.add(facesMeshHelper);
-
-        var shape = getBodyFromGeometry(mesh_outside.geometry);
-        var body_outside = new CANNON.Body({
-          mass : mass
-        });
-
-        body_outside.addShape(shape);
-        body_outside.position.copy(mesh_outside.position);
-        body_outside.quaternion.copy(mesh_outside.quaternion);
-
-        world.add(body_outside);
-        bodies.push(body_outside);
-        scene.add(mesh_outside);
-        
-        bodyWires.push(getMeshFromBody(body_outside));
-
-        // facesMeshHelper = new THREE.FaceNormalsHelper( mesh_outside, 0.3 );
         // meshNormals.push(facesMeshHelper);
         // scene.add(facesMeshHelper);
 
       }
 
-      function clip_face_with_mesh(pattern_mesh, pattern_face, mesh_to_clip, inside) {
+      function clip_face_with_geometry(pattern_geometry, world_matrix, pattern_face, mesh_to_clip, inside) {
 
         // Get face normal and put it in world coords
         var face_normal = pattern_face.normal.clone();
-        var pattern_normal_matrix = new THREE.Matrix3().getNormalMatrix(pattern_mesh.matrixWorld);
+        var pattern_normal_matrix = new THREE.Matrix3().getNormalMatrix(world_matrix);
         face_normal.applyMatrix3(pattern_normal_matrix).normalize();
 
         // If we want to keep the outside, invert normals
@@ -708,8 +724,8 @@
         var mesh_normal_matrix = new THREE.Matrix3().getNormalMatrix(mesh_to_clip.matrixWorld);
 
         // Get one vertex of the face and put it in world coords
-        var face_point = pattern_mesh.geometry.vertices[pattern_face.a].clone();
-        pattern_mesh.localToWorld(face_point);
+        var face_point = pattern_geometry.vertices[pattern_face.a].clone();
+        fracturePattern.localToWorld(face_point);
 
         // Initialize variables
         var mesh_vertices = mesh_to_clip.geometry.vertices;
@@ -956,7 +972,28 @@
 
         var mesh = new THREE.Mesh(geometry, material);
 
+        //recenterMesh(mesh);
+
         return mesh;
+      }
+
+      // Changes a mesh's center to be its center of mass
+      function recenterMesh(mesh) {
+
+        var center = new THREE.Vector3();
+        var verts = mesh.geometry.vertices;
+        var len = verts.length;
+
+        for (var i = 0; i < len; i++) {
+          center.add(verts[i]);
+        }
+        center.divideScalar(len);
+
+        for (var i = 0; i < len; i++) {
+          verts[i].sub(center);
+        }
+        
+        mesh.position.add(center);
       }
 
       function add_to_array_unique(array, vector3) {
