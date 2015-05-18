@@ -66,7 +66,7 @@ function onMouseDown(e) {
 		}
 	}
 
-	for (var i = 0; i < 1; i++) {
+	for (var i = 0; i < fracturePatternCuts.length; i++) {
 
 		var this_cut = fracturePatternCuts[i];
 		var pattern_faces = this_cut.faces;
@@ -82,6 +82,7 @@ function onMouseDown(e) {
 		var no_triangles = false;
 
 		for (var j = 0; j < pattern_faces.length; j++) {
+			console.log(j);
 			current_face = pattern_faces[j];
 
 			var worldMatrix = fracturePattern.matrixWorld;

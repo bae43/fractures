@@ -360,7 +360,7 @@ function setFracturePattern(pattern) {
 				fracturePattern.name = "click marker";
 				scene.add(fracturePattern);
 
-				loadCuts("pyramid", 1);
+				loadCuts("pyramid", 5);
 			});
 
 			break;
