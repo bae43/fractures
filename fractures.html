@@ -68,18 +68,26 @@
 					Scenes
 				</div>
 				<ul id="scene-list">
-					<li>
-						Cubes
+					<li style="background-image: url('rsc/scenes/cubes/cubes.jpg')">
+						<div class="tile-label">
+							Cubes
+						</div>
 					</li>
-					<li>
-						Pillars
+					<li style="background-image: url('rsc/scenes/pillars/pillars.jpg')">
+						<div class="tile-label">
+							Pillars
+						</div>
 					</li>
 
-					<li>
-						Spheres
+					<li style="background-image: url('rsc/scenes/spheres/spheres.jpg')">
+						<div class="tile-label">
+							Spheres
+						</div>
 					</li>
-					<li>
-						Torus
+					<li style="background-image: url('rsc/scenes/torus/torus.jpg')">
+						<div class="tile-label">
+							Torus
+						</div>
 					</li>
 
 				</ul>
@@ -97,6 +105,11 @@
 					<li style="background-image: url('rsc/fracture_templates/trisplit/trisplit.jpg')">
 						<div class="tile-label">
 							Tri-Split
+						</div>
+					</li>
+					<li style="background-image: url('rsc/fracture_templates/pyramid/pyramid.jpg')">
+						<div class="tile-label">
+							Pyramid
 						</div>
 					</li>
 				</ul>
@@ -480,17 +493,33 @@
         fracturePatternCuts = [];
 
         switch(pattern) {
+          case "Pyramid":
+
+            loader.load("rsc/fracture_templates/pyramid/pyramid.js", function(geometry) {
+
+              for (var i = 0; i < geometry.vertices.length; i++) {
+                geometry.vertices[i].multiplyScalar(.2);
+              }
+
+              fracturePattern = new THREE.Mesh(geometry, markerMaterial);
+              fracturePattern.name = "click marker";
+              scene.add(fracturePattern);
+
+              loadCuts("pyramid", 5);
+
+            });
+
+            break;
           case "Tri-Split":
 
             loader.load("rsc/fracture_templates/trisplit/trisplit.js", function(geometry) {
+
               fracturePattern = new THREE.Mesh(geometry, markerMaterial);
               fracturePattern.name = "click marker";
               scene.add(fracturePattern);
 
               fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
               scene.add(fracturesNormalsHelper);
-
-              var numCuts = 3;
 
               loadCuts("trisplit", 3);
 
@@ -544,8 +573,10 @@
       }
 
       function removeFracturePattern() {
-        fracturePattern.visible = false;
-        fracturesNormalsHelper.visible = false;
+        if (fracturePattern) {
+          fracturePattern.visible = false;
+          fracturesNormalsHelper.visible = false;
+        }
       }
 
       function getBodyFromGeometry(geometry, scale_x, scale_y, scale_z) {
@@ -670,7 +701,7 @@
             current_face = pattern_faces[j];
 
             var worldMatrix = fracturePattern.matrixWorld;
-            triangles_inside = clip_face_with_geometry(this_cut, worldMatrix, current_face, mesh_inside, true);
+            triangles_inside = clip_face_with_geometry(this_cut, worldMatrix, current_face, mesh_inside);
 
             // do nothing if no intersection - do not create an empty mesh
             if (triangles_inside.length == 0) {
@@ -709,17 +740,12 @@
 
       }
 
-      function clip_face_with_geometry(pattern_geometry, world_matrix, pattern_face, mesh_to_clip, inside) {
+      function clip_face_with_geometry(pattern_geometry, world_matrix, pattern_face, mesh_to_clip) {
 
         // Get face normal and put it in world coords
         var face_normal = pattern_face.normal.clone();
         var pattern_normal_matrix = new THREE.Matrix3().getNormalMatrix(world_matrix);
         face_normal.applyMatrix3(pattern_normal_matrix).normalize();
-
-        // If we want to keep the outside, invert normals
-        if (inside === false) {
-          face_normal.multiplyScalar(-1.0);
-        }
 
         var mesh_normal_matrix = new THREE.Matrix3().getNormalMatrix(mesh_to_clip.matrixWorld);
 
@@ -972,7 +998,8 @@
 
         var mesh = new THREE.Mesh(geometry, material);
 
-        //recenterMesh(mesh);
+        // recenterMesh(mesh);
+        // scaleMeshGeometry(mesh,0.8);
 
         return mesh;
       }
@@ -991,9 +1018,17 @@
 
         for (var i = 0; i < len; i++) {
           verts[i].sub(center);
+          // verts[i].multiplyScalar(.5);
         }
-        
+
         mesh.position.add(center);
+      }
+
+      function scaleMeshGeometry(mesh, scale) {
+        var verts = mesh.geometry.vertices;
+        for (var i = 0; i < verts.length; i++) {
+          verts[i].multiplyScalar(scale);
+        }
       }
 
       function add_to_array_unique(array, vector3) {
@@ -1120,7 +1155,7 @@
           bodyWires[i].quaternion.copy(bodies[i].quaternion);
         }
 
-        fracturesNormalsHelper.update();
+        // fracturesNormalsHelper.update();
       }
 
       function render() {
