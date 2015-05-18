@@ -46,16 +46,11 @@ function getMeshFromBody(body) {
 	return wire;
 }
 
-function clip_face_with_geometry(pattern_geometry, world_matrix, pattern_face, mesh_to_clip, inside) {
+function clip_face_with_geometry(pattern_geometry, world_matrix, pattern_face, mesh_to_clip) {
 	// Get face normal and put it in world coords
 	var face_normal = pattern_face.normal.clone();
 	var pattern_normal_matrix = new THREE.Matrix3().getNormalMatrix(world_matrix);
 	face_normal.applyMatrix3(pattern_normal_matrix).normalize();
-
-	// If we want to keep the outside, invert normals
-	if (inside === false) {
-		face_normal.multiplyScalar(-1.0);
-	}
 
 	var mesh_normal_matrix = new THREE.Matrix3().getNormalMatrix(mesh_to_clip.matrixWorld);
 
@@ -307,7 +302,8 @@ function create_mesh(triangles) {
 
 	var mesh = new THREE.Mesh(geometry, material);
 
-	//recenterMesh(mesh);
+	// recenterMesh(mesh);
+	// scaleMeshGeometry(mesh,0.8);
 
 	return mesh;
 }
@@ -325,9 +321,17 @@ function recenterMesh(mesh) {
 
 	for (var i = 0; i < len; i++) {
 		verts[i].sub(center);
+		// verts[i].multiplyScalar(.5);
 	}
 	
 	mesh.position.add(center);
+}
+
+function scaleMeshGeometry(mesh, scale) {
+	var verts = mesh.geometry.vertices;
+	for (var i = 0; i < verts.length; i++) {
+		verts[i].multiplyScalar(scale);
+	}
 }
 
 function add_to_array_unique(array, vector3) {

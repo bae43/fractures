@@ -201,7 +201,7 @@ function setScene(scene_name) {
 
 			break;
 		case "Pillars":
-			loader.load("rsc/models/pillar-simple.js", function (geometry) {
+			loader.load("rsc/scenes/pillars/pillar.js", function (geometry) {
 
 				var material = new THREE.MeshPhongMaterial({
 					color : 0x3333ff
@@ -278,40 +278,57 @@ function setScene(scene_name) {
 
 			});
 			break;
+
 		case "Torus":
-			loader.load("rsc/models/doughnut.js", function (geometry) {
-
-				var material = new THREE.MeshPhongMaterial({
-					color : 0x3333ff
-				});
-				var mass = 5;
-
-				var mesh = new THREE.Mesh(geometry, material);
-				mesh.castShadow = true;
-				meshes.push(mesh);
-				mesh.name = "torus  " + i;
-				scene.add(mesh);
-
-				// facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
-				// meshNormals.push(facesMeshHelper)
-				// scene.add(facesMeshHelper);
-
-				// boxes
-				var body = new CANNON.Body({
-					mass : mass
-				});
-
-				// Add to compound
-				body.addShape(getBodyFromGeometry(geometry));
-
-				body.position.y = 3;
-
-				body.name = "Torus Box Body";
-				world.add(body);
-				bodies.push(body);
-				bodyWires.push(getMeshFromBody(body));
-
+			var body = new CANNON.Body({
+				mass : mass
 			});
+
+			var material = new THREE.MeshPhongMaterial({
+				color : 0x3333ff,
+				shading : THREE.FlatShading,
+			});
+			var mass = 5;
+
+			body.position.y = 3;
+
+			body.name = "Torus Box Body";
+
+			var segments_left = 16;
+
+			var geometry = new THREE.Geometry();
+
+			for (var i = 1; i <= 16; i++) {
+				loader.load("rsc/scenes/torus/torus-" + i + ".js", function(new_geo) {
+					THREE.GeometryUtils.merge(geometry, new_geo);
+
+					// facesMeshHelper = new THREE.FaceNormalsHelper( mesh, 0.3 );
+					// meshNormals.push(facesMeshHelper)
+					// scene.add(facesMeshHelper);
+
+					// boxes
+
+					// Add to compound
+					body.addShape(getBodyFromGeometry(geometry));
+
+					if (--segments_left == 0) {
+
+						var mesh = new THREE.Mesh(geometry, material);
+						mesh.castShadow = true;
+						meshes.push(mesh);
+						mesh.name = "torus  " + i;
+						scene.add(mesh);
+
+						world.add(body);
+						bodies.push(body);
+						bodyWires.push(getMeshFromBody(body));
+						alert("done");
+					}
+
+				});
+
+			}
+
 			break;
 
 	}
@@ -332,6 +349,22 @@ function setFracturePattern(pattern) {
 	fracturePatternCuts = [];
 
 	switch(pattern) {
+		case "Pyramid":
+
+			loader.load("rsc/fracture_templates/pyramid/pyramid.js", function(geometry) {
+				for (var i = 0; i < geometry.vertices.length; i++) {
+					geometry.vertices[i].multiplyScalar(.2);
+				}
+
+				fracturePattern = new THREE.Mesh(geometry, markerMaterial);
+				fracturePattern.name = "click marker";
+				scene.add(fracturePattern);
+
+				loadCuts("pyramid", 1);
+			});
+
+			break;
+
 		case "Tri-Split":
 
 			loader.load("rsc/fracture_templates/trisplit/trisplit.js", function (geometry) {
@@ -339,34 +372,16 @@ function setFracturePattern(pattern) {
 				fracturePattern.name = "click marker";
 				scene.add(fracturePattern);
 
-				// fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
-				// scene.add(fracturesNormalsHelper);
-
-				var numCuts = 3;
-
 				loadCuts("trisplit", 3);
 			});
 
 			break;
 
 		case "Plane":
-			// var shape = new THREE.PlaneGeometry(1, 1);
-			// fracturePattern = new THREE.Mesh(shape, markerMaterial);
-			// fracturePattern.rotation.set(Math.PI / 2, 0, 0);
-			// fracturePattern.scale.copy(new THREE.Vector3(2, 2, 2));
-			// fracturePattern.name = "fracture pattern";
-			// scene.add(fracturePattern);
-			//
-			// fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
-			// scene.add(fracturesNormalsHelper);
-
 			loader.load("rsc/fracture_templates/plane/plane.js", function (geometry) {
 				fracturePattern = new THREE.Mesh(geometry, markerMaterial);
 				fracturePattern.name = "click marker";
 				scene.add(fracturePattern);
-
-				// fracturesNormalsHelper = new THREE.FaceNormalsHelper(fracturePattern, 0.3);
-				// scene.add(fracturesNormalsHelper);
 
 				loadCuts("plane", 2);
 			});

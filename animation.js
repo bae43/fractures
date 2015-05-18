@@ -5,8 +5,9 @@ function moveFracturePattern(x, y, z) {
 }
 
 function removeFracturePattern() {
-	fracturePattern.visible = false;
-	// fracturesNormalsHelper.visible = false;
+	if (fracturePattern) {
+		fracturePattern.visible = false;
+	}
 }
 
 function onMouseMove(e) {
@@ -65,7 +66,7 @@ function onMouseDown(e) {
 		}
 	}
 
-	for (var i = 0; i < fracturePatternCuts.length; i++) {
+	for (var i = 0; i < 1; i++) {
 
 		var this_cut = fracturePatternCuts[i];
 		var pattern_faces = this_cut.faces;
@@ -78,21 +79,30 @@ function onMouseDown(e) {
 
 		var mesh_inside = obj;
 
+		var no_triangles = false;
+
 		for (var j = 0; j < pattern_faces.length; j++) {
 			current_face = pattern_faces[j];
 
 			var worldMatrix = fracturePattern.matrixWorld;
-			triangles_inside = clip_face_with_geometry(this_cut, worldMatrix, current_face, mesh_inside, true);
+			triangles_inside = clip_face_with_geometry(this_cut, worldMatrix, current_face, mesh_inside);
 
 			// do nothing if no intersection - do not create an empty mesh
 			if (triangles_inside.length == 0) {
 
-				console.warn('WARNING. creating mesh of zero triangles');
-				return;
+				console.log(fracturePatternCuts);
+				console.log(current_face);
+
+				no_triangles = true;
+				break;
 			}
 
 			mesh_inside = create_mesh(triangles_inside);
 
+		}
+
+		if (no_triangles) {
+			continue;
 		}
 
 		mesh_inside.castShadow = true;
