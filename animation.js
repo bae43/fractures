@@ -45,7 +45,7 @@ function onMouseDown(e) {
 	var pos = entity.point;
 
 	var obj = entity.object;
-	var bodybody = null;
+
 	scene.remove(obj);
 
 	// remove from meshes
@@ -82,7 +82,7 @@ function onMouseDown(e) {
 		var no_triangles = false;
 
 		for (var j = 0; j < pattern_faces.length; j++) {
-			console.log(j);
+
 			current_face = pattern_faces[j];
 
 			var worldMatrix = fracturePattern.matrixWorld;
@@ -108,11 +108,13 @@ function onMouseDown(e) {
 
 		mesh_inside.castShadow = true;
 
-		console.log(mesh_inside);
+		var center_inside = recenterMesh(mesh_inside);
+		var center = new THREE.Vector3(obj.position.x, 0, obj.position.z);
+		center_inside.sub(center);
 
-		meshes.push(mesh_inside);
+		mesh_inside.position.add(center_inside);
 
-		// Create bodies
+		// Create body
 		var shape = getBodyFromGeometry(mesh_inside.geometry);
 		var body_inside = new CANNON.Body({
 			mass : mass
@@ -120,12 +122,13 @@ function onMouseDown(e) {
 
 		body_inside.addShape(shape);
 		body_inside.position.copy(mesh_inside.position);
-		// body_inside.position.y += 2;
 		body_inside.quaternion.copy(mesh_inside.quaternion);
 
-		world.add(body_inside);
-		bodies.push(body_inside);
+		meshes.push(mesh_inside);
 		scene.add(mesh_inside);
+
+		bodies.push(body_inside);
+		world.add(body_inside);
 
 		bodyWires.push(getMeshFromBody(body_inside));
 	}

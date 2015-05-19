@@ -281,14 +281,14 @@ function setScene(scene_name) {
 
 		case "Torus":
 			var mass = 5;
-			
+
 			var body = new CANNON.Body({
 				mass : mass
 			});
 
 			var material = new THREE.MeshPhongMaterial({
 				color : 0x3333ff,
-				shading : THREE.FlatShading,
+				shading : THREE.FlatShading
 			});
 
 			body.position.y = 3;
@@ -300,7 +300,7 @@ function setScene(scene_name) {
 			var geometry = new THREE.Geometry();
 
 			for (var i = 1; i <= 16; i++) {
-				loader.load("rsc/scenes/torus/torus-" + i + ".js", function(new_geo) {
+				loader.load("rsc/scenes/torus/torus-" + i + ".js", function (new_geo) {
 					THREE.GeometryUtils.merge(geometry, new_geo);
 
 					// Add to compound

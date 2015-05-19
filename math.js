@@ -302,9 +302,6 @@ function create_mesh(triangles) {
 
 	var mesh = new THREE.Mesh(geometry, material);
 
-	// recenterMesh(mesh);
-	// scaleMeshGeometry(mesh,0.8);
-
 	return mesh;
 }
 
@@ -319,12 +316,14 @@ function recenterMesh(mesh) {
 	}
 	center.divideScalar(len);
 
-	for (var i = 0; i < len; i++) {
-		verts[i].sub(center);
-		// verts[i].multiplyScalar(.5);
-	}
+	// for (var i = 0; i < len; i++) {
+	// 	verts[i].sub(center);
+	// }
 	
-	mesh.position.add(center);
+	// mesh.position.add(center);
+
+	return center;
+
 }
 
 function scaleMeshGeometry(mesh, scale) {
